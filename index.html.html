@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Visita de Control — Chef Ejecutiva</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1916;
+    --surface2: #242220;
+    --border: #2e2c29;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --cream: #f5f0e8;
+    --red: #d64045;
+    --green: #4caf7d;
+    --text: #e8e4dc;
+    --muted: #7a776f;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* HOME */
+  #home {
+    background: linear-gradient(160deg, #1a1612 0%, #0f0e0c 60%);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  #home::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .home-header { padding: 56px 28px 28px; }
+  .brand-tag {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 14px;
+  }
+  .home-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px; font-weight: 900; line-height: 1.1;
+    color: var(--cream); margin-bottom: 8px;
+  }
+  .home-title span { color: var(--gold); }
+  .home-sub { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+
+  .date-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 100px; padding: 8px 16px;
+    font-size: 13px; color: var(--muted); margin-bottom: 36px;
+  }
+  .date-pill b { color: var(--text); }
+
+  .stores-section { padding: 0 28px 40px; }
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 16px;
+  }
+
+  .store-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 10px;
+    cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .store-card:active { transform: scale(0.98); }
+  .store-card.visited { border-color: rgba(76,175,125,0.4); }
+  .store-card-brand {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .brand-dulcerna { color: #e8b84b; }
+  .brand-coliseo { color: #4b9ee8; }
+  .brand-santa { color: #e84b4b; }
+  .brand-pizzerna { color: #e87a4b; }
+
+  .store-card-name { font-size: 17px; font-weight: 600; color: var(--cream); margin-bottom: 2px; }
+  .store-card-meta { font-size: 13px; color: var(--muted); }
+  .arrow-icon { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: var(--border); font-size: 18px; }
+
+  .visited-badge {
+    position: absolute; top: 16px; right: 16px;
+    width: 24px; height: 24px; background: var(--green); border-radius: 50%;
+    color: white; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* FORM */
+  #form-screen { background: var(--bg); }
+
+  .form-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 20px 20px 16px; position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .back-btn {
+    width: 36px; height: 36px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--text); flex-shrink: 0; transition: background 0.15s;
+  }
+  .back-btn:active { background: var(--border); }
+  .form-header-info { flex: 1; overflow: hidden; }
+  .form-header-brand { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+  .form-header-name { font-size: 17px; font-weight: 600; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .progress-bar-wrap { background: var(--border); height: 3px; overflow: hidden; }
+  .progress-bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    transition: width 0.4s ease; width: 0%;
+  }
+
+  .form-body { padding: 24px 20px 40px; flex: 1; overflow-y: auto; }
+
+  .form-section { margin-bottom: 28px; }
+  .form-section-title {
+    font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700;
+    color: var(--cream); margin-bottom: 4px;
+  }
+  .form-section-sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+
+  .check-item {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+    cursor: pointer; display: flex; align-items: flex-start; gap: 12px;
+    transition: all 0.15s; user-select: none;
+  }
+  .check-item:active { transform: scale(0.99); }
+  .check-item.checked { border-color: var(--gold); background: rgba(201,168,76,0.07); }
+
+  .check-box {
+    width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border);
+    flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; font-size: 13px;
+  }
+  .check-item.checked .check-box { background: var(--gold); border-color: var(--gold); color: #000; font-weight: 700; }
+  .check-label { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; line-height: 1.4; }
+  .check-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .rating-row {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+  }
+  .rating-label { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 10px; }
+  .stars { display: flex; gap: 6px; }
+  .star { font-size: 26px; cursor: pointer; color: var(--border); transition: transform 0.1s, color 0.1s; line-height: 1; }
+  .star.lit { color: var(--gold); }
+  .star:active { transform: scale(1.3); }
+
+  .field-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block;
+  }
+  textarea, input[type="text"] {
+    width: 100%; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 12px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 14px 16px; resize: none; outline: none;
+    transition: border-color 0.15s; -webkit-appearance: none;
+  }
+  textarea:focus, input[type="text"]:focus { border-color: var(--gold); }
+  textarea::placeholder, input::placeholder { color: var(--muted); }
+
+  .mp-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; min-height: 10px; }
+  .mp-tag {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(214,64,69,0.2); border: 1px solid rgba(214,64,69,0.4);
+    border-radius: 100px; padding: 5px 12px; font-size: 13px; color: #f08080;
+  }
+  .mp-tag-remove { cursor: pointer; font-size: 16px; line-height: 1; color: rgba(214,64,69,0.8); }
+  .mp-add { display: flex; gap: 8px; }
+  .mp-add input { flex: 1; }
+  .add-btn {
+    background: var(--gold); color: #000; border: none; border-radius: 10px;
+    padding: 0 18px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s;
+  }
+  .add-btn:active { background: var(--gold-light); }
+
+  .accion-list { margin-bottom: 10px; }
+  .accion-item-row {
+    display: flex; align-items: center; gap: 10px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 6px;
+  }
+  .accion-text { flex: 1; font-size: 14px; color: var(--text); }
+  .action-priority {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; border-radius: 6px; padding: 3px 8px; flex-shrink: 0;
+  }
+  .priority-alta { background: rgba(214,64,69,0.2); color: #f08080; }
+  .priority-media { background: rgba(201,168,76,0.2); color: var(--gold); }
+  .priority-baja { background: rgba(76,175,125,0.2); color: var(--green); }
+  .del-btn { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 0 4px; }
+
+  .accion-add-row {
+    display: flex; flex-direction: column; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; margin-bottom: 10px;
+  }
+  .priority-btns { display: flex; gap: 6px; }
+  .priority-btn {
+    flex: 1; padding: 7px; border-radius: 8px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+  }
+  .priority-btn.sel-alta { border-color: #f08080; color: #f08080; background: rgba(214,64,69,0.1); }
+  .priority-btn.sel-media { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
+  .priority-btn.sel-baja { border-color: var(--green); color: var(--green); background: rgba(76,175,125,0.1); }
+  .accion-confirm-btn {
+    background: var(--surface2); border: 1px solid var(--gold); color: var(--gold);
+    border-radius: 8px; padding: 9px; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+
+  /* Firmas */
+  .sig-container {
+    background: var(--surface); border: 1.5px dashed var(--border);
+    border-radius: 14px; overflow: hidden; margin-bottom: 10px; position: relative;
+  }
+  .sig-label-overlay {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: var(--muted); font-size: 13px; pointer-events: none;
+    text-align: center; transition: opacity 0.3s;
+  }
+  canvas { display: block; width: 100%; height: 140px; touch-action: none; cursor: crosshair; }
+  .sig-actions { display: flex; gap: 8px; margin-bottom: 20px; }
+  .sig-clear {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .submit-btn {
+    width: 100%; background: linear-gradient(135deg, var(--gold), var(--gold-light));
+    color: #000; border: none; border-radius: var(--radius); padding: 18px;
+    font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s; margin-top: 8px;
+  }
+  .submit-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  /* Fotos */
+  .photo-upload-btn {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1.5px dashed var(--border);
+    border-radius: 12px; padding: 13px 16px; cursor: pointer;
+    transition: border-color 0.2s; width: 100%; margin-bottom: 10px;
+  }
+  .photo-upload-btn:active { border-color: var(--gold); }
+  .photo-upload-btn span { font-size: 20px; }
+  .photo-upload-btn-label { flex: 1; }
+  .photo-upload-btn-label b { display: block; font-size: 14px; font-weight: 600; color: var(--text); }
+  .photo-upload-btn-label small { font-size: 12px; color: var(--muted); }
+  .photo-input { display: none; }
+
+  .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .photo-thumb {
+    position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+    background: var(--surface2); border: 1px solid var(--border);
+  }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-thumb-del {
+    position: absolute; top: 4px; right: 4px; width: 22px; height: 22px;
+    background: rgba(0,0,0,0.7); border: none; border-radius: 50%;
+    color: white; font-size: 13px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; line-height: 1;
+  }
+  .photo-count-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 100px; padding: 4px 10px; font-size: 12px; color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  /* SUCCESS */
+  #success-screen {
+    background: var(--bg); align-items: center;
+    justify-content: center; padding: 40px 28px; text-align: center;
+  }
+  .success-icon {
+    width: 90px; height: 90px; background: rgba(76,175,125,0.15);
+    border: 2px solid var(--green); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; margin: 0 auto 28px;
+    animation: pop 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+  }
+  @keyframes pop { 0%{transform:scale(0)} 100%{transform:scale(1)} }
+  .success-title {
+    font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 900;
+    color: var(--cream); margin-bottom: 10px;
+  }
+  .success-sub { color: var(--muted); font-size: 15px; margin-bottom: 36px; line-height: 1.6; }
+  .success-details {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; width: 100%; margin-bottom: 28px; text-align: left;
+  }
+  .success-detail-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+  }
+  .success-detail-row:last-child { border-bottom: none; }
+  .detail-key { color: var(--muted); }
+  .detail-val { font-weight: 600; color: var(--cream); }
+  .score-badge { font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 900; color: var(--gold); margin: 16px 0; }
+  .score-label { font-size: 13px; color: var(--muted); }
+  .btn-outline {
+    width: 100%; background: transparent; border: 1.5px solid var(--gold); color: var(--gold);
+    border-radius: var(--radius); padding: 15px; font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 10px; transition: background 0.15s;
+  }
+  .btn-outline:active { background: rgba(201,168,76,0.1); }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home" class="screen active">
+  <div class="home-header">
+    <div class="brand-tag">Chef Ejecutiva · Control de Calidad</div>
+    <h1 class="home-title">Visitas<br><span>del Mes</span></h1>
+    <p class="home-sub">Selecciona el punto a visitar</p>
+    <div class="date-pill">📅 <b id="home-date"></b></div>
+  </div>
+
+  <div class="stores-section">
+    <div class="section-label">Puntos con restaurante — Dulcerna</div>
+    <div class="store-card" onclick="openStore(0)" id="card-0">
+      <div class="store-card-brand brand-dulcerna">Dulcerna</div>
+      <div class="store-card-name">DBS + Pizzerna</div>
+      <div class="store-card-meta">Punto restaurante</div>
+      <div class="arrow-icon">›</div>
+    </div>
+    <div class="store-card" onclick="openStore(1)" id="card-1">
+      <div class="store-card-brand brand-dulcerna">Dulcerna</div>
+      <div class="store-card-name">DVC</div>
+      <div class="store-card-meta">Punto restaurante</div>
+      <div class="arrow-icon">›</div>
+    </div>
+    <div class="store-card" onclick="openStore(2)" id="card-2">
+      <div class="store-card-brand brand-dulcerna">Dulcerna</div>
+      <div class="store-card-name">PDP</div>
+      <div class="store-card-meta">Punto restaurante</div>
+      <div class="arrow-icon">›</div>
+    </div>
+    <div class="store-card" onclick="openStore(3)" id="card-3">
+      <div class="store-card-brand brand-dulcerna">Dulcerna</div>
+      <div class="store-card-name">Principal</div>
+      <div class="store-card-meta">Punto restaurante</div>
+      <div class="arrow-icon">›</div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px">Otras marcas</div>
+    <div class="store-card" onclick="openStore(4)" id="card-4">
+      <div class="store-card-brand brand-coliseo">Coliseo</div>
+      <div class="store-card-name">Coliseo Sport Bar</div>
+      <div class="store-card-meta">Sport bar · Punto único</div>
+      <div class="arrow-icon">›</div>
+    </div>
+    <div class="store-card" onclick="openStore(5)" id="card-5">
+      <div class="store-card-brand brand-santa">Santa Cabrona</div>
+      <div class="store-card-name">Santa Cabrona</div>
+      <div class="store-card-meta">Restaurante mexicano · Punto único</div>
+      <div class="arrow-icon">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- FORM -->
+<div id="form-screen" class="screen">
+  <div class="form-header">
+    <div class="back-btn" onclick="goHome()">‹</div>
+    <div class="form-header-info">
+      <div class="form-header-brand" id="fh-brand"></div>
+      <div class="form-header-name" id="fh-name"></div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+
+  <div class="form-body">
+
+    <div class="form-section">
+      <div class="form-section-title">🧹 Limpieza e Higiene</div>
+      <div class="form-section-sub">Marca los ítems que están en buen estado</div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Pisos y desagües limpios</div><div class="check-sub">Sin residuos ni acumulación de grasa</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Superficies de trabajo desinfectadas</div><div class="check-sub">Mesones, tablas, equipos de corte</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Área de lavado organizada</div><div class="check-sub">Separación de loza sucia / limpia</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Manipuladores con dotación completa</div><div class="check-sub">Cofia, delantal, guantes según tarea</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Almacenamiento correcto de químicos</div><div class="check-sub">Separados de alimentos, debidamente etiquetados</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Neveras y congeladores limpios</div><div class="check-sub">Sin derrame ni acumulación de escarcha</div></div></div>
+      <div style="margin-top:14px">
+        <label class="field-label">Observaciones de higiene</label>
+        <textarea rows="2" placeholder="Anota hallazgos específicos..." id="obs-higiene"></textarea>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="form-section">
+      <div class="form-section-title">🔪 Mise en Place</div>
+      <div class="form-section-sub">Verificación de preparaciones y organización</div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Fondos y bases del día listos</div><div class="check-sub">Caldos, salsas madre, reducciones</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Proteínas porcionadas correctamente</div><div class="check-sub">Pesos según ficha técnica</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Guarniciones listas para servicio</div><div class="check-sub">Vegetales, almidones, ensaladas base</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Pastelería y postres completos</div><div class="check-sub">Producción del día según proyección</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><div><div class="check-label">Mise en place de barra organizado</div><div class="check-sub">Guarniciones, bases, refrescos</div></div></div>
+      <div style="margin-top:14px">
+        <label class="field-label">Calificación de preparaciones</label>
+        <div class="rating-row">
+          <div class="rating-label">¿Cómo estaban los estándares hoy?</div>
+          <div class="stars" id="stars-mp">
+            <span class="star" onclick="setStars('stars-mp',1)">★</span>
+            <span class="star" onclick="setStars('stars-mp',2)">★</span>
+            <span class="star" onclick="setStars('stars-mp',3)">★</span>
+            <span class="star" onclick="setStars('stars-mp',4)">★</span>
+            <span class="star" onclick="setStars('stars-mp',5)">★</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <label class="field-label">Observaciones de mise en place</label>
+        <textarea rows="2" placeholder="Detalles de preparaciones, técnica, temperatura..." id="obs-mise"></textarea>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="form-section">
+      <div class="form-section-title">⚠️ MP Sin Rotación</div>
+      <div class="form-section-sub">Ingredientes que no están saliendo — registra para tomar medidas</div>
+      <div class="mp-tags" id="mp-tags-list"></div>
+      <div class="mp-add">
+        <input type="text" id="mp-input" placeholder="Ej: Lomo de res, queso crema..." />
+        <button class="add-btn" onclick="addMP()">+ Agregar</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px">Presiona Enter o el botón para agregar cada ítem</p>
+      <div style="margin-top:16px">
+        <label class="field-label">📷 Fotos de MP sin rotación</label>
+        <div class="photo-grid" id="mp-photo-grid"></div>
+        <label class="photo-upload-btn" for="mp-photo-input">
+          <span>📷</span>
+          <div class="photo-upload-btn-label">
+            <b>Tomar o adjuntar foto</b>
+            <small>Captura la MP directamente desde nevera o bodega</small>
+          </div>
+        </label>
+        <input type="file" accept="image/*" capture="environment" multiple class="photo-input" id="mp-photo-input" onchange="handlePhotos(event,'mp')">
+      </div>
+      <div style="margin-top:12px">
+        <label class="field-label">Medidas tomadas en el punto</label>
+        <textarea rows="3" placeholder="Ej: Se modificó el especial del día para incluir el lomo, se informó al jefe de cocina..." id="obs-mp"></textarea>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="form-section">
+      <div class="form-section-title">📋 Acciones Correctivas</div>
+      <div class="form-section-sub">Registra las acciones que deben tomarse</div>
+      <div class="accion-list" id="acciones-list"></div>
+      <div class="accion-add-row">
+        <input type="text" id="accion-input" placeholder="Describe la acción correctiva..." />
+        <div class="priority-btns">
+          <button class="priority-btn sel-alta" id="p-alta" onclick="setPriority('alta')">🔴 Alta</button>
+          <button class="priority-btn" id="p-media" onclick="setPriority('media')">🟡 Media</button>
+          <button class="priority-btn" id="p-baja" onclick="setPriority('baja')">🟢 Baja</button>
+        </div>
+        <button class="accion-confirm-btn" onclick="addAccion()">+ Agregar acción</button>
+      </div>
+      <div style="margin-top:14px">
+        <label class="field-label">📸 Fotos de hallazgos importantes</label>
+        <div class="photo-grid" id="hallazgos-photo-grid"></div>
+        <label class="photo-upload-btn" for="hallazgos-photo-input">
+          <span>📸</span>
+          <div class="photo-upload-btn-label">
+            <b>Registrar hallazgo con foto</b>
+            <small>Documenta visualmente las no conformidades</small>
+          </div>
+        </label>
+        <input type="file" accept="image/*" capture="environment" multiple class="photo-input" id="hallazgos-photo-input" onchange="handlePhotos(event,'hallazgos')">
+      </div>
+      <div style="margin-top:8px">
+        <label class="field-label">Calificación general del punto</label>
+        <div class="rating-row">
+          <div class="rating-label">Evaluación global de la visita</div>
+          <div class="stars" id="stars-general">
+            <span class="star" onclick="setStars('stars-general',1)">★</span>
+            <span class="star" onclick="setStars('stars-general',2)">★</span>
+            <span class="star" onclick="setStars('stars-general',3)">★</span>
+            <span class="star" onclick="setStars('stars-general',4)">★</span>
+            <span class="star" onclick="setStars('stars-general',5)">★</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="form-section">
+      <div class="form-section-title">✍️ Firmas</div>
+      <div class="form-section-sub">Validación de la visita — ambas firmas requeridas</div>
+
+      <label class="field-label">Firma — Chef Ejecutiva</label>
+      <div class="sig-container">
+        <div class="sig-label-overlay" id="sig1-hint">Firma aquí con el dedo</div>
+        <canvas id="sig1" height="140"></canvas>
+      </div>
+      <div class="sig-actions">
+        <button class="sig-clear" onclick="clearSig(1)">✕ Limpiar</button>
+      </div>
+
+      <label class="field-label" style="margin-top:8px">Nombre del encargado</label>
+      <input type="text" id="encargado-nombre" placeholder="Nombre completo del encargado del punto" style="margin-bottom:12px">
+
+      <label class="field-label">Firma — Encargado del Punto</label>
+      <div class="sig-container">
+        <div class="sig-label-overlay" id="sig2-hint">Encargado firma aquí</div>
+        <canvas id="sig2" height="140"></canvas>
+      </div>
+      <div class="sig-actions">
+        <button class="sig-clear" onclick="clearSig(2)">✕ Limpiar</button>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="submitVisit()">Guardar Visita ›</button>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="success-screen" class="screen">
+  <div class="success-icon">✓</div>
+  <h2 class="success-title">¡Visita Registrada!</h2>
+  <p class="success-sub" id="success-sub"></p>
+  <div class="success-details" id="success-details"></div>
+  <button class="btn-outline" onclick="downloadReport()">📄 Descargar Resumen</button>
+  <button class="btn-outline" onclick="goHome()" style="border-color:var(--border);color:var(--muted)">← Volver al inicio</button>
+</div>
+
+<script>
+const stores = [
+  { brand: 'Dulcerna', brandClass: 'brand-dulcerna', name: 'DBS + Pizzerna', meta: 'Punto restaurante' },
+  { brand: 'Dulcerna', brandClass: 'brand-dulcerna', name: 'DVC', meta: 'Punto restaurante' },
+  { brand: 'Dulcerna', brandClass: 'brand-dulcerna', name: 'PDP', meta: 'Punto restaurante' },
+  { brand: 'Dulcerna', brandClass: 'brand-dulcerna', name: 'Principal', meta: 'Punto restaurante' },
+  { brand: 'Coliseo', brandClass: 'brand-coliseo', name: 'Coliseo Sport Bar', meta: 'Sport bar' },
+  { brand: 'Santa Cabrona', brandClass: 'brand-santa', name: 'Santa Cabrona', meta: 'Restaurante mexicano' },
+];
+
+let currentStore = null;
+let mpItems = [];
+let acciones = [];
+let selectedPriority = 'alta';
+let sig1HasData = false;
+let sig2HasData = false;
+let photos = { mp: [], hallazgos: [] };
+
+// Date
+const d = new Date();
+document.getElementById('home-date').textContent = d.toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function openStore(idx) {
+  currentStore = idx;
+  const s = stores[idx];
+  document.getElementById('fh-brand').textContent = s.brand;
+  document.getElementById('fh-brand').className = 'form-header-brand ' + s.brandClass;
+  document.getElementById('fh-name').textContent = s.name;
+
+  // Reset
+  mpItems = []; acciones = [];
+  document.querySelectorAll('.check-item').forEach(c => {
+    c.classList.remove('checked');
+    c.querySelector('.check-box').textContent = '';
+  });
+  document.querySelectorAll('textarea').forEach(t => t.value = '');
+  document.querySelectorAll('input[type="text"]').forEach(i => i.value = '');
+  document.querySelectorAll('.stars .star').forEach(s => s.classList.remove('lit'));
+  document.getElementById('mp-tags-list').innerHTML = '';
+  document.getElementById('acciones-list').innerHTML = '';
+  photos = { mp: [], hallazgos: [] };
+  ['mp','hallazgos'].forEach(k => {
+    const g = document.getElementById(k+'-photo-grid');
+    if(g) g.innerHTML = '';
+    const inp = document.getElementById(k+'-photo-input');
+    if(inp) inp.value = '';
+  });
+  sig1HasData = false; sig2HasData = false;
+  document.getElementById('sig1-hint').style.opacity = 1;
+  document.getElementById('sig2-hint').style.opacity = 1;
+  setPriority('alta');
+
+  showScreen('form-screen');
+  setTimeout(() => { setupCanvas('sig1'); setupCanvas('sig2'); }, 150);
+  updateProgress();
+}
+
+function goHome() { showScreen('home'); }
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  el.querySelector('.check-box').textContent = el.classList.contains('checked') ? '✓' : '';
+  updateProgress();
+}
+
+function setStars(id, n) {
+  document.querySelectorAll('#' + id + ' .star').forEach((s,i) => s.classList.toggle('lit', i < n));
+  updateProgress();
+}
+function getStars(id) { return document.querySelectorAll('#' + id + ' .star.lit').length; }
+
+function addMP() {
+  const input = document.getElementById('mp-input');
+  const val = input.value.trim();
+  if (!val) return;
+  mpItems.push(val); renderMPTags(); input.value = ''; updateProgress();
+}
+document.getElementById('mp-input').addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();addMP();} });
+
+function removeMP(i) { mpItems.splice(i,1); renderMPTags(); }
+function renderMPTags() {
+  document.getElementById('mp-tags-list').innerHTML = mpItems.map((m,i) =>
+    `<div class="mp-tag">${m}<span class="mp-tag-remove" onclick="removeMP(${i})">×</span></div>`
+  ).join('');
+}
+
+function setPriority(p) {
+  selectedPriority = p;
+  ['alta','media','baja'].forEach(x => {
+    const b = document.getElementById('p-' + x);
+    b.className = 'priority-btn' + (x===p ? ' sel-'+x : '');
+  });
+}
+
+function addAccion() {
+  const input = document.getElementById('accion-input');
+  const val = input.value.trim();
+  if (!val) return;
+  acciones.push({ text: val, priority: selectedPriority });
+  renderAcciones(); input.value = ''; updateProgress();
+}
+document.getElementById('accion-input').addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();addAccion();} });
+
+function removeAccion(i) { acciones.splice(i,1); renderAcciones(); }
+function renderAcciones() {
+  document.getElementById('acciones-list').innerHTML = acciones.map((a,i) =>
+    `<div class="accion-item-row">
+      <div class="accion-text">${a.text}</div>
+      <span class="action-priority priority-${a.priority}">${a.priority.charAt(0).toUpperCase()+a.priority.slice(1)}</span>
+      <button class="del-btn" onclick="removeAccion(${i})">×</button>
+    </div>`
+  ).join('');
+}
+
+function updateProgress() {
+  const total = document.querySelectorAll('.check-item').length;
+  const done = document.querySelectorAll('.check-item.checked').length;
+  const stars = getStars('stars-general') > 0 ? 1 : 0;
+  const pct = Math.round((done/total)*70 + stars*15 + (sig1HasData?10:0) + (sig2HasData?5:0));
+  document.getElementById('progress-fill').style.width = Math.min(pct,100)+'%';
+}
+
+// Photo handling
+function handlePhotos(event, key) {
+  const files = Array.from(event.target.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      photos[key].push({ src: e.target.result, name: file.name });
+      renderPhotoGrid(key);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removePhoto(key, idx) {
+  photos[key].splice(idx, 1);
+  renderPhotoGrid(key);
+}
+
+function renderPhotoGrid(key) {
+  const grid = document.getElementById(key + '-photo-grid');
+  if (!grid) return;
+  grid.innerHTML = photos[key].map((p, i) => `
+    <div class="photo-thumb">
+      <img src="${p.src}" alt="foto ${i+1}">
+      <button class="photo-thumb-del" onclick="removePhoto('${key}',${i})">×</button>
+    </div>
+  `).join('');
+  // Show count badge if photos exist
+  const countId = key + '-photo-count';
+  let badge = document.getElementById(countId);
+  const label = grid.previousElementSibling;
+  if (photos[key].length > 0) {
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.className = 'photo-count-badge';
+      badge.id = countId;
+      grid.parentNode.insertBefore(badge, grid);
+    }
+    badge.textContent = '📷 ' + photos[key].length + ' foto(s) adjunta(s)';
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+// Signature pads
+function setupCanvas(id) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth || 320;
+  canvas.width = w * dpr;
+  canvas.height = 140 * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.strokeStyle = '#e8c97a';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  let drawing = false, lastX, lastY;
+  const num = id === 'sig1' ? 1 : 2;
+
+  function getPos(e) {
+    const r = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - r.left), y: (src.clientY - r.top) };
+  }
+  function start(e) {
+    e.preventDefault(); drawing = true;
+    const p = getPos(e); lastX = p.x; lastY = p.y;
+    if(num===1){sig1HasData=true;document.getElementById('sig1-hint').style.opacity=0;}
+    else{sig2HasData=true;document.getElementById('sig2-hint').style.opacity=0;}
+    updateProgress();
+  }
+  function move(e) {
+    if(!drawing)return; e.preventDefault();
+    const p = getPos(e);
+    ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke();
+    lastX=p.x; lastY=p.y;
+  }
+  function end() { drawing=false; }
+
+  canvas.addEventListener('mousedown',start);
+  canvas.addEventListener('mousemove',move);
+  canvas.addEventListener('mouseup',end);
+  canvas.addEventListener('touchstart',start,{passive:false});
+  canvas.addEventListener('touchmove',move,{passive:false});
+  canvas.addEventListener('touchend',end);
+}
+
+function clearSig(num) {
+  const canvas = document.getElementById('sig'+num);
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+  if(num===1){sig1HasData=false;document.getElementById('sig1-hint').style.opacity=1;}
+  else{sig2HasData=false;document.getElementById('sig2-hint').style.opacity=1;}
+  updateProgress();
+}
+
+// ── CAMBIA ESTA URL por la de tu Apps Script desplegado ──
+const APPS_SCRIPT_URL = "https://script.google.com/a/macros/dulcerna.com/s/AKfycbxB3b3iQT3vqwAgZq7W5CFf4O5dipoZ1eXQtJ0x9r34FVUKBYh7JUzRmYgnJdB8QN2I/exec";
+
+async function submitVisit() {
+  if(!sig1HasData || !sig2HasData) {
+    alert('⚠️ Se requieren ambas firmas para guardar la visita.');
+    return;
+  }
+
+  const s = stores[currentStore];
+  const checked = document.querySelectorAll('.check-item.checked').length;
+  const total = document.querySelectorAll('.check-item').length;
+  const starsGen = getStars('stars-general');
+  const starsMP = getStars('stars-mp');
+  const score = Math.round(((checked/total)*0.4 + (starsGen/5)*0.4 + (starsMP/5)*0.2)*100);
+  const now = new Date();
+
+  // Armar payload
+  const payload = {
+    fecha: now.toLocaleString('es-CO'),
+    punto: s.name,
+    marca: s.brand,
+    score: score,
+    higiene_ok: checked,
+    higiene_total: total,
+    obs_higiene: document.getElementById('obs-higiene').value,
+    stars_mp: starsMP,
+    obs_mise: document.getElementById('obs-mise').value,
+    mp_items: mpItems,
+    obs_mp: document.getElementById('obs-mp').value,
+    photos_mp: photos.mp.map(p => p.src),
+    acciones: acciones,
+    photos_hallazgos: photos.hallazgos.map(p => p.src),
+    stars_general: starsGen,
+    encargado: document.getElementById('encargado-nombre').value,
+    firma_chef: sig1HasData,
+    firma_encargado: sig2HasData
+  };
+
+  // Mostrar pantalla de éxito optimistamente
+  markVisited(currentStore, s);
+  document.getElementById('success-sub').textContent = `${s.name} · ${now.toLocaleString('es-CO')}`;
+  document.getElementById('success-details').innerHTML = `
+    <div class="success-detail-row"><span class="detail-key">Punto</span><span class="detail-val">${s.name}</span></div>
+    <div class="success-detail-row"><span class="detail-key">Fecha y hora</span><span class="detail-val">${now.toLocaleString('es-CO')}</span></div>
+    <div class="success-detail-row"><span class="detail-key">Ítems de higiene OK</span><span class="detail-val">${checked} / ${total}</span></div>
+    <div class="success-detail-row"><span class="detail-key">MP sin rotación</span><span class="detail-val">${mpItems.length} ítem(s)</span></div>
+    <div class="success-detail-row"><span class="detail-key">Acciones correctivas</span><span class="detail-val">${acciones.length} registrada(s)</span></div>
+    <div class="success-detail-row" id="sync-status"><span class="detail-key">Google Sheets</span><span class="detail-val" style="color:var(--gold)">⏳ Sincronizando...</span></div>
+    <div style="text-align:center;padding-top:12px">
+      <div class="score-label">CALIFICACIÓN GENERAL</div>
+      <div class="score-badge">${score}%</div>
+    </div>
+  `;
+  showScreen('success-screen');
+
+  // Enviar a Google Sheets
+  if (APPS_SCRIPT_URL === "https://script.google.com/a/macros/dulcerna.com/s/AKfycbxB3b3iQT3vqwAgZq7W5CFf4O5dipoZ1eXQtJ0x9r34FVUKBYh7JUzRmYgnJdB8QN2I/exec") {
+    document.getElementById('sync-status').innerHTML = '<span class="detail-key">Google Sheets</span><span class="detail-val" style="color:var(--muted)">⚠️ URL no configurada</span>';
+    return;
+  }
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if (result.success) {
+      document.getElementById('sync-status').innerHTML = '<span class="detail-key">Google Sheets</span><span class="detail-val" style="color:var(--green)">✓ Guardado en Sheets</span>';
+    } else {
+      throw new Error(result.error);
+    }
+  } catch(err) {
+    document.getElementById('sync-status').innerHTML = '<span class="detail-key">Google Sheets</span><span class="detail-val" style="color:var(--red)">✗ Error al sincronizar</span>';
+    console.error('Sheets error:', err);
+  }
+}
+
+function markVisited(idx, s) {
+  const card = document.getElementById('card-'+idx);
+  card.classList.add('visited');
+  const arrow = card.querySelector('.arrow-icon');
+  if(arrow) arrow.remove();
+  if(!card.querySelector('.visited-badge')) {
+    const badge = document.createElement('div');
+    badge.className = 'visited-badge'; badge.textContent = '✓';
+    card.appendChild(badge);
+  }
+}
+
+function downloadReport() {
+  const s = stores[currentStore];
+  const now = new Date();
+  const checked = document.querySelectorAll('.check-item.checked').length;
+  const total = document.querySelectorAll('.check-item').length;
+  const encargado = document.getElementById('encargado-nombre').value || 'No registrado';
+  const obsH = document.getElementById('obs-higiene').value || 'Sin observaciones';
+  const obsM = document.getElementById('obs-mise').value || 'Sin observaciones';
+  const obsMP = document.getElementById('obs-mp').value || 'Sin registro';
+  const starsGen = getStars('stars-general');
+  const starsMP = getStars('stars-mp');
+
+  const txt = `VISITA DE CONTROL — CHEF EJECUTIVA
+==========================================
+Punto: ${s.name}
+Marca: ${s.brand}
+Fecha: ${now.toLocaleString('es-CO')}
+Encargado: ${encargado}
+
+LIMPIEZA E HIGIENE
+------------------
+Ítems aprobados: ${checked} / ${total}
+Observaciones: ${obsH}
+
+MISE EN PLACE
+-------------
+Calificación: ${starsMP}/5 estrellas
+Observaciones: ${obsM}
+
+MP SIN ROTACIÓN (${mpItems.length} ítem(s))
+--------------
+${mpItems.length > 0 ? mpItems.map((m,i) => `${i+1}. ${m}`).join('\n') : 'Ninguna MP sin rotación detectada'}
+Medidas tomadas: ${obsMP}
+Fotos adjuntas: ${photos.mp.length} foto(s)
+
+ACCIONES CORRECTIVAS (${acciones.length})
+--------------------
+${acciones.length > 0 ? acciones.map((a,i) => `${i+1}. [${a.priority.toUpperCase()}] ${a.text}`).join('\n') : 'Sin acciones registradas'}
+Fotos de hallazgos: ${photos.hallazgos.length} foto(s)
+
+CALIFICACIÓN GENERAL: ${starsGen}/5 estrellas
+SCORE CALCULADO: ${Math.round(((checked/total)*0.4+(starsGen/5)*0.4+(starsMP/5)*0.2)*100)}%
+
+✓ Visita validada con firma digital.
+Firmas: Chef Ejecutiva + ${encargado}
+==========================================
+Generado: ${now.toISOString()}`;
+
+  const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `visita_${s.name.replace(/\s+/g,'_')}_${now.toLocaleDateString('es-CO').replace(/\//g,'-')}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
